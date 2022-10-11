@@ -1,0 +1,90 @@
+
+
+
+To start with we are given this 'message' to decode. 
+
+483473494141414141414141412b3351765537444d425146594d3939696a
+79432f776754673632454e4b3064312b45326b65374730457049694b4851
+3938634e537965594b6b41366e7977640a3262362b746e78386554316f63
+567579714b3239704c712f6b3965353045594c5a5931576c314858516971
+706443307165654e334c63377648382b6e71684a763576547466542f742f
+314d550a6250616331687830486c306269473265584e7275683967314c6d
+356f4862495063376366544d646c6e5a71536f65326f30646d37464b3750
+72373461364d773839365777464d77785453617a0a6930746a3739716542
+72505a635a6c626b79656665686f3137647a636b6e764d46465044343950
+77554b782b2b326341414141414141414141414141414141414141414141
+41442b746b397a0a78614e314143674141413d3d0a
+
+if we'd use the Magic option for this encoded string, it'd point that it's base58:
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Matching ops: From Base85
+Valid UTF8
+Entropy: 3.61 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+but if we decode it with xxd -p -r, we'd get a base64 encoded string output:
+
+H4sIAAAAAAAAA+3QvU7DMBQFYM99ijyC/wgTg62ENK0d1+E2ke7G0EpIiKHQ98cNSyeYKkA6nywd
+2b6+tnx8eT1ocVuyqK29pLq/k9e50EYLZY1Wl1HXQiqpdC0qeeN3Lc7vH8+nqhJv5vTtfT/t/1MU
+bPac1hx0Hl0biG2eXNruh9g1Lm5oHbIPc7cfTMdlnZqSoe2o0dm7FK7Pr74a6Mw896WwFMwxTSaz
+i0tj79qeBrPZcZlbkyefeho17dzcknvMFFPD49PwUKx++2cAAAAAAAAAAAAAAAAAAAAAAAD+tk9z
+xaN1ACgAAA==
+
+decoding it with 'base64 -d', would give us a strange output:
+
+K'�*@:�,پ��||y=hq[��������׹�F�
+                             e�V�Q�B*�t-*y�w-��ϧ�o���}?��Sl���t]m�\����5.nh�s�L�e�������ٻ�ϯ�▒��<����1M&��Kc�ڞ��q�[�'�z▒5��ܒ{�S����P�~�g��Osţu(
+
+we can then output this into a file and inspect what is this with the 'file' command:
+└─$ file output
+output: gzip compressed data, from Unix, original size modulo 2^32 10240
+
+we find out that it is a compressed file, with tar xzvf output we can extract it's contents.
+
+└─$ tar xzvf output 
+file2
+└─$ cat file2                                                                                   
+TL4QBZOHZL2QRAELTZ4QVAOKUNMGDAMJTHLQBLWGUN3GZAOKTD3GZLEGTD2QBAOLTL4QBZOHZL2Q
+RAELTZ2QZZWITD3QBAWMOV3QZAMLTZ4QBAEITN3JPZMLT43QVBOITR2TPAWETAFQTMODZRSN====
+
+we are given a base32 encoded string.
+└─$ cat file2 | base32 -d                                                                       
+��������y
+�ʣXa�����ƣvl�ʘ�l�����˚�������u
+                              �Ș���uw
+                                     ���y���v�募7
+�Ȝu7�Ę
+        ���d 
+
+if we just try to decode it with base32 -d it would give us with a messy message. now, I did this intentionally to bug your mind, you'll have to use a rot 13
+script to decode it properly:
+
+└─$ cat file2 | tr 'A-Z a-z' 'N-ZA-M n-za-m'                                                    
+GY4DOMBUMY2DENRYGM4DINBXHAZTQNZWGUYDOYJTHA3TMNBXGQ3TMYRTGQ2DONBYGY4DOMBUMY2D
+ENRYGM2DMMJVGQ3DONJZBI3DMNZYGM4DONRVGA3WCMZYG43DIOBVGE2GCNJRGNSDGZBQMEFA====
+
+now we can continue decoding it using 'base32 -d'
+└─$ cat file2 | tr 'A-Z a-z' 'N-ZA-M n-za-m' | base32 -d                                        
+68704f42683844783876507a387647476b34474868704f42683461546759
+66783876507a387648514a513d3d0a
+
+after a while, we got this output, which is a pretty weird one too:
+└─$ cat file2 | tr 'A-Z a-z' 'N-ZA-M n-za-m' | base32 -d | xxd -p -r | base64 -d                
+����������񆓁����������������%
+
+again, we'll output this into a file and inspect it:
+
+└─$ cat file2 | tr 'A-Z a-z' 'N-ZA-M n-za-m' | base32 -d | xxd -p -r | base64 -d > output2 
+└─$ file output2
+output2: Non-ISO extended-ASCII text, with no line terminators
+
+You'll have to use the command 'dd', to get into the decoded flag:
+
+└─$ cat output2 | dd conv=ascii  
+flag{REDACTED}
+0+1 registros de entrada
+0+1 registros de saída
+31 bytes copiados, 0,00014273 s, 217 kB/s
+
+
